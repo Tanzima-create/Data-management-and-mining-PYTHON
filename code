@@ -1,0 +1,342 @@
+#This is a data management and mining project whrere I have retrieved data from 2010/01/01 to 2020/11/02 and saved them as CSV file 
+#I have added up_down (binary) and LogReturn variables to each dataset
+#Visualized close prices and log returns
+#PCA visualization for each datasets
+#Then I have calculated the days of up and down for each stock in each year
+#Finally, I have found the dates with the maximum/Minimum closing prices for each stocks
+
+pip install pip
+pip install pandas-datareader
+import numpy as np
+import pandas as pd
+import pandas_datareader.data as web
+import matplotlib.pyplot as plt
+import os
+import seaborn as sns
+
+##### 1) Retrieve Stock data and save in csv.
+
+start_date='01/01/2010'
+end_date='11/02/2020'
+data_source='yahoo'
+
+ticker_list=['AAPL','WMT','BAC','AEO']
+
+def retrievestock(ticker_list, data_source, start_date, end_date):
+  stock_data=web.DataReader(ticker_list, data_source=data_source,
+                            start=start_date, end=end_date)
+  return stock_data
+
+aapl=retrievestock('AAPL',data_source, start_date, end_date)
+
+wmt=retrievestock('WMT',data_source, start_date, end_date)
+
+bac=retrievestock('BAC',data_source, start_date, end_date)
+
+aeo=retrievestock('AEO',data_source, start_date, end_date)
+
+#### For saving file to Colab
+file_name = 'AAPLStock.csv'
+aapl.to_csv(file_name)
+pd.read_csv('AAPLStock.csv')
+
+file_name = 'WMTStock.csv'
+wmt.to_csv(file_name)
+pd.read_csv('WMTStock.csv')
+
+file_name = 'BACStock.csv'
+bac.to_csv(file_name)
+pd.read_csv('BACStock.csv')
+
+file_name = 'AEOStock.csv'
+aeo.to_csv(file_name)
+pd.read_csv('AEOStock.csv')
+
+
+### Present plot for each data set
+
+fig=plt.figure(figsize=(15,10))
+plt.subplot(2,1,1)
+plt.plot(aapl['Close'],c='r', label="AAPL")
+plt.plot(wmt['Close'],c='b', label="WMT")
+plt.plot(bac['Close'],c='g', label="BAC")
+plt.plot(aeo['Close'],c='y', label="AEO")
+plt.legend()
+plt.grid('on')
+
+#### 2) Add up_down and log return to each variables
+aapl['UP_DOWN']=aapl['Open']-aapl['Close']>0
+print(aapl['UP_DOWN'])
+aapl['LogReturn']=np.log(aapl['Close']/aapl['Close'].shift(1))
+print(aapl['LogReturn'])
+aapl.head()
+aapl.describe().T
+
+wmt['UP_DOWN']=wmt['Open']-wmt['Close']>0
+print(wmt['UP_DOWN'])
+wmt['LogReturn']=np.log(wmt['Close']/wmt['Close'].shift(1))
+print(wmt['LogReturn'])
+wmt.head()
+wmt.describe().T
+
+bac['UP_DOWN']=bac['Open']-bac['Close']>0
+print(bac['UP_DOWN'])
+bac['LogReturn']=np.log(bac['Close']/bac['Close'].shift(1))
+print(bac['LogReturn'])
+bac.head()
+bac.describe().T
+
+aeo['UP_DOWN']=aeo['Open']-aeo['Close']>0
+print(aeo['UP_DOWN'])
+aeo['LogReturn']=np.log(aeo['Close']/aeo['Close'].shift(1))
+print(aeo['LogReturn'])
+aeo.head()
+aeo.describe().T
+
+#### 3) Visualize close price and log return
+
+### AAPL Visualization of close price and log return
+fig0=sns.pairplot(data=aapl,hue='UP_DOWN', markers=['o','s'])
+fig0=plt.figure(figsize=(15,10))
+
+plt.subplot(2,2,1)
+plt.plot(aapl['Close'],c='red')
+plt.xlabel('year')
+plt.ylabel('price')
+plt.grid('on')
+
+plt.subplot(2,2,2)
+sns.kdeplot(aapl['Close'], color='r')
+plt.xlabel('price')
+plt.ylabel('density')
+
+plt.subplot(2,2,3)
+sns.boxplot(aapl['Close'], color='c')
+plt.subplot(2,2,4)
+sns.boxplot(aapl['LogReturn'], color='red')
+
+### WMT Visualization of close price and log return
+fig1=sns.pairplot(data=wmt, hue='UP_DOWN', markers=['o','s'])
+fig1=plt.figure(figsize=(15,10))
+
+plt.subplot(2,2,1)
+plt.plot(wmt['Close'],c='blue')
+plt.xlabel('year')
+plt.ylabel('price')
+plt.grid('on')
+
+plt.subplot(2,2,2)
+sns.kdeplot(wmt['Close'], color='b')
+plt.xlabel('price')
+plt.ylabel('density')
+
+plt.subplot(2,2,3)
+sns.boxplot(wmt['Close'], color='orange')
+plt.subplot(2,2,4)
+sns.boxplot(wmt['LogReturn'], color='b')
+
+### BAC Visualization of close price and log return
+fig2=sns.pairplot(data=bac, hue='UP_DOWN', markers=['o','s'])
+fig2=plt.figure(figsize=(15,10))
+
+plt.subplot(2,2,1)
+plt.plot(bac['Close'],c='green')
+plt.xlabel('year')
+plt.ylabel('price')
+plt.grid('on')
+
+plt.subplot(2,2,2)
+sns.kdeplot(bac['Close'], color='g')
+plt.xlabel('price')
+plt.ylabel('density')
+
+plt.subplot(2,2,3)
+sns.boxplot(bac['Close'], color='green')
+plt.subplot(2,2,4)
+sns.boxplot(bac['LogReturn'], color='gold')
+
+### AEO Visualization of close price and log return
+fig3=sns.pairplot(data=aeo, hue='UP_DOWN', markers=['o','s'])
+fig3=plt.figure(figsize=(15,10))
+
+plt.subplot(2,2,1)
+plt.plot(aeo['Close'],c='yellow')
+plt.xlabel('year')
+plt.ylabel('price')
+plt.grid('on')
+
+plt.subplot(2,2,2)
+sns.kdeplot(aeo['Close'], color='yellow')
+plt.xlabel('price')
+plt.ylabel('density')
+
+plt.subplot(2,2,3)
+sns.boxplot(aeo['Close'], color='gold')
+plt.subplot(2,2,4)
+sns.boxplot(aeo['LogReturn'], color='pink')
+
+### 4) PCA Visualization for each datasets
+
+from sklearn.preprocessing import StandardScaler
+def biplot(newData, label_1, label_2, label_1_name, label_2_name, Method):
+  #label 1
+  plt.scatter(newData[label_1,0],newData[label_1,1],label=label_1_name,
+  marker='o', color='c', edgecolor='b', alpha=0.95, s=25)
+  #label 2
+  plt.scatter(newData[label_2,0],newData[label_2,1],label=label_2_name,
+  marker='o', color='r', edgecolor='g',alpha=0.95,s=22)
+  plt.legend()
+
+  ax= plt.gca()
+  ax.legend(prop={'size': 10})
+
+  if Method=='pca':
+     plt.xlabel('$PC_{1}$', fontsize=10)
+     plt.ylabel('$PC_{2}$', fontsize=10)
+  elif Method=='spce':
+     plt.xlabel('$SPC_{1}$', fontsize=10)
+     plt.ylabel('$SPC_{2}$', fontsize=10)
+  else:
+     plt.xlabel('$'+Method +'_{1}'+'$', fontsize=8)
+     plt.ylabel('$'+Method +'_{2}'+'$', fontsize=8)
+
+#drop
+data_aapl = aapl.iloc[:, 0:aapl.shape[1]-1].copy()
+data_aapl = data_aapl.dropna()
+ 
+data_wmt = wmt.iloc[:, 0:wmt.shape[1]-1].copy()
+data_wmt = data_wmt.dropna()
+
+data_bac = bac.iloc[:, 0:bac.shape[1]-1].copy()
+data_bac = data_bac.dropna()
+
+data_aeo = aeo.iloc[:, 0:aeo.shape[1]-1].copy()
+data_aeo = data_aeo.dropna()
+
+from sklearn.decomposition import PCA
+
+def doPCA (data):
+   scaler = StandardScaler()
+   normalized_data = scaler.fit_transform(data)
+   pca= PCA()
+   stockPCAData=pca.fit_transform(normalized_data)
+   return stockPCAData
+
+# PCA AAPL
+pca_aapl=doPCA(data_aapl)
+up = data_aapl['UP_DOWN']== True
+down = data_aapl['UP_DOWN']== False
+
+fig_pca=plt.figure(figsize=(10, 5))
+plt.title('AAPL')
+biplot(pca_aapl, up, down,'up','down','pca')
+plt.style.use('seaborn')
+
+# PCA WMT
+pca_wmt=doPCA(data_wmt)
+up = data_wmt['UP_DOWN']== True
+down = data_wmt['UP_DOWN']== False
+
+fig_pca=plt.figure(figsize=(10, 5))
+plt.title('WMT')
+biplot(pca_wmt, up, down,'up','down','pca')
+plt.style.use('seaborn')
+
+# PCA BAC
+pca_bac=doPCA(data_bac)
+up = data_bac['UP_DOWN']== True
+down = data_bac['UP_DOWN']== False
+
+fig_pca=plt.figure(figsize=(10, 5))
+plt.title('BAC')
+biplot(pca_bac, up, down,'up','down','pca')
+plt.style.use('seaborn')
+
+# PCA AEO
+pca_aeo=doPCA(data_aeo)
+up = data_aeo['UP_DOWN']== True
+down = data_aeo['UP_DOWN']== False
+
+fig_pca=plt.figure(figsize=(10, 5))
+plt.title('AEO')
+biplot(pca_aeo, up, down,'up','down','pca')
+plt.style.use('seaborn')
+
+### 5) Calculate UP and DOWN Each year
+
+aapl['year'] = aapl.index.year
+aapl.groupby('year').sum()
+
+wmt['year'] = wmt.index.year
+wmt.groupby('year').sum()
+
+bac['year'] = bac.index.year
+bac.groupby('year').sum()
+
+aeo['year'] = aeo.index.year
+aeo.groupby('year').sum()
+
+### 6) Maximum/ Minimum closing prices for each stocks
+
+# AAPL
+aapl['date']=aapl.index 
+
+aapl['max']=np.max(aapl['Close'])
+aapl['max1']=aapl['Close']==aapl['max']  
+aapl_max=aapl.loc[aapl['max.1]==True]
+aapl_max1=aapl_max[['date','Close']].copy()
+aapl_max
+
+aapl['min']=np.min(aapl['Close'])
+aapl['min1']=aapl['Close']==aapl['min']
+aapl_min=aapl.loc[aapl['min1']==True]
+aapl_min1=aapl_min[['date','Close']].copy()
+aapl_min
+
+# WMT
+wmt['date']=wmt.index 
+
+wmt['max']=np.max(wmt['Close'])
+wmt['max1']=wmt['Close']==wmt['max']  
+wmt_max=wmt.loc[wmt['max1']==True]
+wmt_max1=wmt_max[['date','Close']].copy()
+wmt_max
+
+wmt['min']=np.min(wmt['Close'])
+wmt['min1']=wmt['Close']==wmt['min']
+wmt_min=wmt.loc[wmt['min1']==True]
+wmt_min1=wmt_min[['date','Close']].copy()
+wmt_min
+
+# BAC
+bac['date']=bac.index 
+
+bac['max']=np.max(bac['Close'])
+bac['max1']=bac['Close']==bac['max']  
+bac_max=bac.loc[bac['max1']==True]
+bac_max1=bac_max[['date','Close']].copy()
+bac_max
+
+bac['min']=np.min(bac['Close'])
+bac['min1']=bac['Close']==bac['min']
+bac_min=bac.loc[bac['min1']==True]
+bac_min1=bac_min[['date','Close']].copy()
+bac_min
+
+# AEO
+aeo['date']=aeo.index 
+
+aeo['max']=np.max(aeo['Close'])
+aeo['max1']=aeo['Close']==aeo['max']  
+aeo_max=aeo.loc[aeo['max1']==True]
+aeo_max1=aeo_max[['date','Close']].copy()
+aeo_max
+
+aeo['min']=np.min(aeo['Close'])
+aeo['min1']=aeo['Close']==aeo['min']
+aeo_min=aeo.loc[aeo['min1']==True]
+aeo_min1=aeo_min[['date','Close']].copy()
+aeo_min
+
+
+
