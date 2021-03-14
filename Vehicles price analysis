@@ -1,0 +1,162 @@
+
+# First, I have found the number of SUV, Sports, Wagon, minivan, and Sedan
+# Sorted the top-10 vehicles with the most expensive Dealer price
+# Grouped vehicles by their CityMPG and their cylinder information
+# Vehicles are sorted by their dealer price, engine size, and HighWayMPG
+# Vehicles whose Dealer prices is >< Retail prices at least $6000
+# Vehicles which are ’AWD’, ’Cylinder >5’, and Dealer prices >$40000
+# Labeled vehicles as ’Sports’ and ’non-sports’ and applied PCA to visualize the data
+
+pip install pip
+pip install pandas-datareader
+import numpy as np
+import pandas as pd
+import pandas_datareader.data as web
+import matplotlib.pyplot as plt
+import os
+import seaborn as sns
+
+# Data reading, cleaning and variable find out
+
+vehicles = pd.read_csv (r'/Users/tanz/Desktop/vehicles.csv')
+
+# Creating Sedan type variable
+type_name = ['SUV','Sports','Wagon','Minivan']
+
+conditions = [(vehicles['SUV']==1),
+              (vehicles['Sports']==1),
+               (vehicles['Wagon']==1),
+                (vehicles['Minivan']==1)]
+print(len(conditions))
+
+vehicles['Type'] = np.select(conditions,type_name)
+
+print(vehicles['Type'])
+
+vehicles['Type']= vehicles['Type'].replace('0','Sedan')
+
+#Drop the useless variable running one by one
+vehicles.drop(columns='SUV', inplace=True)
+vehicles.drop(columns='Sports', inplace=True)
+vehicles.drop(columns='Wagon', inplace=True)
+vehicles.drop(columns='Minivan', inplace=True)
+
+data_vehicles = vehicles.copy()
+
+# 1) Numbers of suv, sports, wagon, minivan and sedan
+
+# Vehicles counts chart
+data_vehicles = vehicles.copy()
+vehicles_type_counts = data_vehicles['Type'].value_counts()
+print(vehicles_type_counts)
+vehicles_type_labels = vehicles_type_counts.index
+
+
+import matplotlib.pyplot as plt
+fig = plt.figure(figsize=(15, 10))
+
+sliceColors = ['pink','orange','lightgreen','cyan','grey','yellow','ivory','lightblue']
+plt.pie(vehicles_type_counts.values,
+        autopct='%.2f%%',
+        labels=vehicles_type_labels,
+        colors=sliceColors)
+       
+# 2) The top-10 vehicles with the most expensive Dealer price
+
+expensive_V=vehicles.sort_values(by=['Dealer'],ascending=False).nlargest(10,'Dealer')
+print(expensive_V)
+       
+expensive_V.plot(kind='bar')
+plt.title('Most expensive')
+plt.xlabel('Model')
+plt.ylabel('Dealer Price')
+plt.grid('on')
+plt.show()
+
+# 3) Group vehicles by their CityMPG and their cylinders information
+
+pd.DataFrame(data_vehicles.groupby(['CityMPG','Cylinders']))
+
+
+# 4) Sort by vehicles by their Dealer price, Engine size and HighwayMPG
+
+data_vehicles4=data_vehicles.sort_values(by=['Dealer','Engine','HighwayMPG'],ascending=False)
+print(data_vehicles4)
+
+
+# 5) Vehicles whose dealer price > < Retail price at least $6000 
+
+data_vehicles['Price']=data_vehicles['Retail']-data_vehicles['Dealer']
+data_vehicles.query('Price''>=6000')
+
+# 6) Vehicles which are AWD, Cylinders > 5 and Dealer prices > $40000
+
+vehicles6 = data_vehicles[(data_vehicles.AWD==1) & (data_vehicles.Cylinders > 5) & 
+                          (data_vehicles.Dealer > 40000)]
+print(vehicles6)
+
+# 7) Label Vehicles as Sports and Non Sports Visualize PCA
+
+vehicles_type=data_vehicles.copy()
+
+vehicles_type['Type']=vehicles_type['Type'].apply(lambda x: 'Sports' if x == 'Sports' else 'Nonsports')
+print(vehicles_type)
+
+vehicles_type.Type = vehicles_type.Type.map( {'Sports':1 , 'Nonsports':0} )
+
+vehicles_type=vehicles_type.set_index('Model')
+
+
+from sklearn.preprocessing import StandardScaler
+def biplot(newData, label_1, label_2, label_1_name, label_2_name, Method):
+  #label 1
+  plt.scatter(newData[label_1,0],newData[label_1,1],label=label_1_name,
+  marker='o', color='r', edgecolor='b', alpha=0.95, s=25)
+  #label 2
+  plt.scatter(newData[label_2,0],newData[label_2,1],label=label_2_name,
+  marker='o', color='c', edgecolor='g',alpha=0.95,s=22)
+  plt.legend()
+
+  ax= plt.gca()
+  ax.legend(prop={'size': 10})
+
+  if Method=='pca':
+     plt.xlabel('$PC_{1}$', fontsize=10)
+     plt.ylabel('$PC_{2}$', fontsize=10)
+  elif Method=='spce':
+     plt.xlabel('$SPC_{1}$', fontsize=10)
+     plt.ylabel('$SPC_{2}$', fontsize=10)
+  else:
+     plt.xlabel('$'+Method +'_{1}'+'$', fontsize=8)
+     plt.ylabel('$'+Method +'_{2}'+'$', fontsize=8)
+
+vehicles_type = vehicles_type.iloc[:, 0:vehicles_type.shape[1]-1].copy()
+vehicles_type = vehicles_type.dropna()
+
+
+from sklearn.decomposition import PCA
+
+def doPCA (data):
+   scaler = StandardScaler()
+   normalized_data = scaler.fit_transform(data)
+   pca= PCA()
+   vehiclesPCAData=pca.fit_transform(normalized_data)
+   return vehiclesPCAData
+
+pcavehicles=doPCA(vehicles_type)
+Sports = vehicles_type['Type']== 1
+Nonsports = vehicles_type['Type']== 0
+
+fig_pca=plt.figure(figsize=(10, 5))
+plt.title('Vehicles')
+biplot(pcavehicles, Sports, Nonsports,'Sports','Nonsports','PCA')
+plt.style.use('seaborn')
+
+
+# scatter plot sample
+plt.scatter(vehicles['Retail'], vehicles['Dealer']) 
+plt.title('Scatterplot of vehicles price') 
+plt.xlabel('Engine size') 
+plt.ylabel('Price') 
+plt.grid() 
+plt.show()
