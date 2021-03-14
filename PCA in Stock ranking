@@ -1,0 +1,106 @@
+
+# PCA analysis and visualization for the SP 2010_baby.csv
+# Suppose k PCs are selected in your PCA for the SP 2010_baby.csv data. It means ith stock will have coordinates pi1, pi2 · · · pik in the subspace spanned by PCs.
+#1. Sorted the top 20 stocks with largest PC1 values
+#2. Sorted the top 20 stocks with largest PC2 values
+#3. And Sorted the top 20 stocks with largest PCk values
+#4. Ranked each stock by their PCA ranking score ρ=􏰀p2i1 +p2i2 +···+p2ik, listed the top-ranked 20 stocks, and described their characteristics as k = 2, 3, 4
+######
+pip install pip
+pip install pandas-datareader
+import numpy as np
+import pandas as pd
+import pandas_datareader.data as web
+from matplotlib import pyplot as plt 
+import seaborn as sns
+from pandas import read_csv
+import math
+
+sp = pd.read_csv('/Users/tanz/Desktop/Final Python/SP_2010__baby.csv')
+sp.describe()
+
+# Visualization for sp baby stock
+import matplotlib.pyplot as plt
+fig=plt.figure(figsize=(25,18))
+sp.plot(kind='line')
+plt.grid('on')
+plt.xlabel('Overall stock view')
+plt.show()
+
+# renaming, dropping and setting variables 
+sp=sp.rename(columns={'Earnings/Share':'eps','Book Value':'bv','52 week low':'low_52w','52 week high':'high_52w',
+                      'Market Cap':'mcap','Price/Sales':'price_sales'})
+sp=sp.drop(['Symbol','Sector'],axis=1)
+sp=sp.set_index(['Name'])
+
+from sklearn.preprocessing import StandardScaler
+normalized_sp = StandardScaler().fit_transform(sp)
+normalized_sp_df = pd.DataFrame(data=normalized_sp,columns=sp.columns, index=sp.index)
+
+from sklearn.decomposition import PCA
+pca = PCA(n_components=3)
+pcaNewData = pca.fit_transform(normalized_sp_df)
+PC = pca.components_
+PC_df = pd.DataFrame(data=pcaNewData,index=normalized_sp_df.index,columns = ['PC1','PC2','PC3'])
+PC_df
+
+# Visualization for PC of sp baby stock 
+import matplotlib.pyplot as plt
+fig=plt.figure(figsize=(18,10))
+PC_df.plot(kind='line')
+plt.grid('on')
+plt.ylabel('Stock Companies')
+plt.xlabel('Finacial details')
+plt.show()
+
+# Biplot
+from sklearn.preprocessing import StandardScaler
+normalized_sp = StandardScaler().fit_transform(sp)
+normalized_sp_df = pd.DataFrame(data=normalized_sp,columns=sp.columns, index=sp.index)
+fig=plt.figure(figsize=(25,10))
+
+for i in range(len(pcaNewData)):
+    plt.scatter(pcaNewData[i,0], pcaNewData[i,1], marker='.', c='white', alpha=1.0)
+    plt.text(pcaNewData[i,0], pcaNewData[i,1], normalized_sp_df.index[i],
+    color='deepskyblue', fontsize=8, alpha=0.95)
+   
+# Draw variables
+scale=10
+
+for k in range(normalized_sp_df.shape[1]): 
+   plt.text(PC_df.iloc[k,0]*scale + 0.05,
+   PC_df.iloc[k,1]*scale + 0.05,
+   PC_df.index[k], color='k',
+   fontweight='bold', fontsize=12)
+   plt.arrow(0,0, PC_df.iloc[k,0]*scale , PC_df.iloc[k,1]*scale,color='r', 
+   head_width=0.15, linewidth=0.5,alpha=0.9)
+   
+plt.xlabel('$PC_{1}$') 
+plt.ylabel('$PC_{2}$')
+
+
+PC_df = PC_df.merge(sp, left_index=True, right_index=True)
+PC_df.reset_index(inplace=True)
+
+#1. find the top 20 stocks with largest PC1 values
+top20_PC1=PC_df.sort_values(['PC1'], ascending=False).head(20)
+top20_PC1.plot(x="Name", y=['PC1','PC2','PC3'])
+plt.show()
+
+#2. find the top 20 stocks with largest PC2 values
+top20_PC2=PC_df.sort_values(['PC2'], ascending=False).head(20)
+top20_PC2.plot(x="Name", y=['PC1','PC2','PC3'])
+plt.show()
+
+#3. Find the top 20 stocks with largest PC3 values
+top20_PC3=PC_df.sort_values(['PC3'], ascending=False).head(20)
+top20_PC3.plot(x="Name", y=['PC1','PC2','PC3'])
+plt.show()
+
+#4. Rank each stock by their PCA ranking score p-ranked 20 stocks
+PC_df["score_sq"]=PC_df['PC1']**2+PC_df['PC2']**2+PC_df['PC3']**2
+PC_df["score"]=PC_df["score_sq"]**(1/2)
+
+top20_score=PC_df.sort_values(['score'], ascending=False).head(20)
+top20_score.plot(x="Name", y=['score'])
+plt.show()
