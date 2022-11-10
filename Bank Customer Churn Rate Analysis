@@ -1,0 +1,431 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 10 15:37:32 2022
+
+@author: tanz
+"""
+
+# BANK CHURN RATE- CAPSTONE PROJECT by TANZIMA SULTANA
+
+""" The bank is concerned about attrition where customers no longer purchase or interact with the bank. 
+Finding churn rates and analyzing the related dependent issues are necessary parts of a financial institution. 
+It also shows any red flags on customers leaving, what makes a customer stay loyal or issues 
+that are causing customers to leave the organization, and how the organization can improve their 
+promotional service to ensure the business profit. """
+
+""" Our goal is to predict Churning customers of a bank dataset consisting of 10000 customer observations featuring including their 
+age, salary, marital_status, credit card limit, credit card category, etc more. The process will include the 
+exploratory data analysis (EDA) on the dataset based on all features."""
+
+#Importing other necessary packages DATA CLEANING EXPLORATORY DATA ANALYSIS.
+
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt 
+
+from sklearn import preprocessing
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+import pandas as pd
+import statsmodels.api as sm
+sns.set_style("darkgrid")
+mpl.rcParams['figure.figsize'] = (20,5)
+
+"""After importing all necessary packages, I loaded the dataset in python and conducted necessary 
+data preprocessing such as checking categorical variables, whether any lowercase colnames are existing or not, 
+dropping any unnecessary variables, and adding a variable such as churn_out to keep the analysis step simple."""
+
+# Data cleaning, checking categorical variable, lowercase colnames, drop variables, add variables
+
+bank = pd.read_csv("/Users/tanz/Desktop/BankChurners.csv").\
+    rename(columns=str.lower).\
+    drop(['naive_bayes_classifier_attrition_flag_card_category_contacts_count_12_mon_dependent_count_education_level_months_inactive_12_mon_1',
+                'naive_bayes_classifier_attrition_flag_card_category_contacts_count_12_mon_dependent_count_education_level_months_inactive_12_mon_2',
+                'clientnum'],axis=1)
+bank.describe()
+
+"""The data is described by showing all the numerical variables explaining the count, mean, standard deviation minimum, and maximum values."""
+
+# Data cleaning, checking categorical variable, lowercase colnames, drop variables, add variables
+
+bank['churn_out'] = np.where(bank['attrition_flag']=='Attrited Customer',1,0)
+
+summary = bank.describe().T
+
+bank.groupby('card_category').count()
+
+count = bank.groupby('customer_age')['attrition_flag'].count().reset_index()
+
+summary.info()
+
+# Checking missing values and duplicate
+bank.isnull().sum()
+
+bank.duplicated().value_counts()
+
+round(bank.describe(exclude = ['float', 'int64']),2)
+bank.head()
+
+# Checking summary of data columns
+summary = bank.groupby('churn_out').describe().T
+bank.dtypes
+summary = bank.groupby('churn_out').agg(
+    {
+     'customer_age':['mean','median'],
+     'dependent_count':['mean','median'],
+     'months_on_book':['mean','median'],
+     'total_relationship_count':['mean','median'],
+     'months_inactive_12_mon':['mean','median'],
+     'contacts_count_12_mon':['mean','median'],
+     'credit_limit':['mean','median'],
+     'total_revolving_bal':['mean','median'],
+     'avg_open_to_buy':['mean','median'],
+     'total_amt_chng_q4_q1':['mean','median'],
+     'total_trans_amt':['mean','median'],
+     'total_trans_ct':['mean','median'],
+     'total_ct_chng_q4_q1':['mean','median'],
+     'avg_utilization_ratio':['mean','median']}).\
+    T.rename(columns={0:'Existing',1:'Churned'})
+
+summary.dtypes
+summary.describe()
+
+"""It is very important to create a summary of all the numeric variables. I wanted to group by the churn out 
+with the variable to see the status of the numerical columns."""
+
+# The general distrubition of the numerical variables
+
+datalist = bank.hist(bins=20, figsize = (20, 20), color = 'green')
+plt.savefig("Hist.png")
+
+"""The general distribution of the numerical variables can give us an overall understanding of data at 
+a glance that can help to conduct further exploratory analysis."""
+
+# Correlation between attrition flag and other variables
+plt.figure(figsize=(16,6))
+bank.corr()['churn_out'].sort_values().plot(kind="bar")
+plt.title('Correlation with all numeric Variables')
+
+"""The correlation between the attrition flag and other numerical variables helps to see the relationship among the variables."""
+
+# Analysis and Visualization of the Data
+
+# Customer attirtion flag, proportion of attrited customers
+plt.figure(figsize=(5,6))
+ax = sns.countplot(data = bank, x = bank.attrition_flag)
+bank.attrition_flag.value_counts()
+
+"""The chart is showing the value of total Existing customers of 8500 and the total Attrited customers of 1627"""
+
+# Customer age distribution with the Gender list to df
+gender_list = ["male", bank['gender'].value_counts()["M"]], ["female", bank['gender'].value_counts()["F"]]
+gender_list
+
+df_gender = pd.DataFrame(gender_list, columns=["gender", "total"])
+df_gender
+df_gender.groupby(['gender']).sum().plot(
+    kind='pie', y="total", autopct='%1.1f%%', startangle = 90)
+
+"""The proportion of male customers is 47% and the rest of the 53% of customers are female."""
+
+# customer age proportion
+bank['age']='age'
+bank.loc[(bank['customer_age']>25)&(bank['customer_age']<=35),'age']='Young'
+bank.loc[(bank['customer_age']>35)&(bank['customer_age']<=45),'age']='Middle_young'
+bank.loc[(bank['customer_age']>45)&(bank['customer_age']<=55),'age']='Middle_age'
+bank.loc[(bank['customer_age']>55)&(bank['customer_age']<=65),'age']='Old'
+bank.loc[bank['customer_age']>65,'age']='Very_old'
+
+
+age=bank['age'].value_counts()
+
+churn = bank.query('churn_out==1')
+exisiting = bank.query('churn_out==0')
+
+plt.figure(figsize = (8,8))
+plt.pie(churn['age'].value_counts(),
+        labels = ['Young', 'Middle_young', 'Middle_age', 'Old','Very_old'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Age distribution of Churned customers' , fontsize = 16)
+plt.show()
+
+plt.figure(figsize = (8,8))
+plt.pie(exisiting['age'].value_counts(),
+        labels = ['Young', 'Middle_young', 'Middle_age', 'Old','Very_old'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Age distribution of Existing customers' , fontsize = 16)
+plt.show()
+
+"""I created an age group variable to summarize the churned and existing customer by their age groups.
+ Within the churned customer and existing customers, Young and Middle age young customers have the highest attrition proportion."""
+ 
+ # Customers'Distribution based on Education level
+edu=bank["education_level"].value_counts()
+
+plt.figure(figsize = (8,8))
+plt.pie(churn['education_level'].value_counts(),
+        labels = ['Graduate', 'Post-Graduate', 'College', 'Unknown', 'Uneducated','Doctorate', 'High School'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Proportion of Education_Level', fontsize = 16)
+plt.show()
+
+plt.figure(figsize = (8,8))
+plt.pie(exisiting['education_level'].value_counts(),
+        labels = ['Graduate', 'Post-Graduate', 'College', 'Unknown', 'Uneducated','Doctorate', 'High School'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Proportion of Education_Level', fontsize = 16)
+plt.show()
+
+"""The Customers' Distribution is based on Education Level and shows the highest proportion among 
+Graduate, Post-Graduate, and College level people."""
+
+# Proportion of card usage within the Card Category
+
+cc_list = ["Blue", bank['card_category'].value_counts()["Blue"]], ["Silver", bank['card_category'].\
+          value_counts()["Silver"]], ["Gold", bank['card_category'].\
+          value_counts()["Gold"]], ["Platinum", bank['card_category'].value_counts()["Platinum"]]
+cc_list
+
+df_card = pd.DataFrame(cc_list, columns=["card_Category", "total"])
+df_card
+
+df_card.groupby(['card_Category']).sum().plot(
+    kind='pie', y="total", autopct='%1.1f%%', startangle = 90)
+
+"""The proportion of card usage within the Card Category shows Blue is the most demanded card with customers usage 
+rate as 93%, followed by Silver with 5% usage rate."""
+
+# Ratio of card utilization
+
+a = sns.catplot(x='card_category', y='avg_utilization_ratio',hue= 'attrition_flag', kind= 'bar', data = bank, height=6.27, aspect=6.7/5.27)
+plt.xlabel('Card Categories')
+plt.ylabel('Utilization Ratio')
+plt.title('Utilization Ratios in Different Card Categories')
+
+"""The average card utilization in the card category shows that blue has the highest utilization ratio.
+ Simultaneously, blue has the higher attrition of customers than gold, platinum, and silver."""
+ 
+# Churn out rate on Education level 
+
+a = sns.catplot(x='education_level', y='churn_out', kind= 'bar', data = bank, errwidth=0, height=6.27, aspect=6.7/5.27)
+plt.xlabel('Education level')
+plt.ylabel('Churn Out')
+plt.title('Churn Out rate on education level')
+
+"""The higher the education level, when highest the churn-out rate."""
+
+# Attrition between genders of education level
+
+a = sns.catplot(x='education_level', y='churn_out',hue= 'gender', kind= 'bar', data = bank, errwidth=0, height=7.27, aspect=8.7/6.27)
+plt.xlabel('Education Level')
+plt.ylabel('Churn Out')
+plt.title('Attrition between genders of education level')
+
+
+"""Across all education groups, female shows a higher churn rate than male except for the case of college and post-graduate groups.
+ Within the female group, clients with doctorate degrees show the highest rate of churn out. 
+ Within the male group, clients with post-graduate degrees show the highest rate of churn out."""
+ 
+# Marital status and churn out
+
+a = sns.catplot(x='marital_status', y='churn_out', kind= 'bar', data = bank, errwidth=0, height=6.27, aspect=6.7/5.27)
+plt.xlabel('Marital Status')
+plt.ylabel('Churn Out')
+plt.title('Churn Out rate on Marital Status')
+
+"""The churn rate is high when marital status is single and unknown."""
+
+# Attrition proportion between marital status and education level category
+
+a = sns.catplot(x='marital_status', y='churn_out',hue= 'education_level', kind= 'bar', data = bank, height=7.27, aspect=10.7/8.27, errwidth=0)
+plt.xlabel('Marital Status')
+plt.ylabel('Churn Out')
+plt.title('Attrition proportion between marital status and education level')
+
+"""For both groups of married and divorced, clients with doctorate degrees show the highest churn out. 
+Within single people, we do not observe much differences in churn out across different educational groups."""
+
+# Proportion of income category
+
+bank.income_category.unique()
+plt.figure(figsize = (8,8))
+plt.pie(churn['income_category'].value_counts(),
+        labels = ['Less than $40K', '$40K - $60K', '$60K - $80K','$80K - $120K', '$120K +','Unknown'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Proportion of Churned people Income_Category', fontsize = 16)
+plt.show()
+
+plt.figure(figsize = (8,8))
+plt.pie(exisiting['income_category'].value_counts(),
+        labels = ['Less than $40K', '$40K - $60K', '$60K - $80K','$80K - $120K', '$120K +','Unknown'],
+        autopct='%1.1f%%', startangle = 90)
+plt.title('Proportion of Existing people Income_Category', fontsize = 16)
+plt.show()
+
+
+"""The Customers' Distribution is based on the Income category and it shows the highest proportion of people who has 
+income (less than  40𝑘)𝑎𝑡𝑎37 40k -  60𝑘)𝑎𝑡16 60k - $80k) at 15%."""
+                                      
+#Probabity of churning out between income category
+
+a = sns.catplot(x='income_category', y='churn_out', kind= 'bar', data = bank, errwidth=0, height=7.27, aspect=10.7/8.27)
+plt.xlabel('Income Category')
+plt.ylabel('Churn Out')
+plt.title('Probability of churning out among all income categories')
+                                     
+
+"""We can observe a relatively higher churn-out rate among very low-income group (less than $40K) and very high-income group (more than $120K)."""
+
+# total_trans_ct and total_trans_amt based on attrition flag of overall customer
+
+sns.scatterplot(data=bank, x="total_trans_ct", y="total_trans_amt", hue="attrition_flag")
+plt.title('Attrition from total_trans_ct to total_trans_amt')
+
+"""Clients conducting very few transactions (below 80) and low transaction amounts are highly likely to leave the bank.
+ The possibility of churn out is nearly zero for clients doing more than 90 transactions with very high transaction amounts."""
+ 
+# Credit limit based on income category
+bank['cr_limit']='cr_limit'
+bank.loc[(bank['credit_limit']>1400)&(bank['credit_limit']<=8000),'cr_limit']='Low'
+bank.loc[(bank['credit_limit']>8000)&(bank['credit_limit']<=16000),'cr_limit']='Medium'
+bank.loc[(bank['credit_limit']>16000)&(bank['credit_limit']<=35000),'cr_limit']='High'
+
+
+cr = pd.crosstab(bank['income_category'], 
+            bank['cr_limit'],
+            margins = True, 
+            margins_name = "total%", 
+            normalize='index')
+sns.heatmap(cr, annot=True, fmt='.0%', cmap='GnBu')
+
+"""When Income Category is low, naturally the credit limit is also low."""
+
+# Credit limit based on Attrition flag
+
+a = sns.catplot(x='cr_limit', y='churn_out', kind= 'bar', data = bank)
+plt.xlabel('Credit Limit')
+plt.ylabel('Churn Out')
+plt.title('Credit limit impact on Churn Out rate')
+
+"""Clients with very low revolving balance, within the range of 0 and 800, have the highest possiblity of churn out."""
+
+# Total_Revolving_Bal
+bank.total_revolving_bal.nunique()
+bank['revolving_bal']=''
+bank.loc[(bank['total_revolving_bal']>=0)&(bank['total_revolving_bal']<=800),'revolving_bal']='Low'
+bank.loc[(bank['total_revolving_bal']>800)&(bank['total_revolving_bal']<=1600),'revolving_bal']='Medium'
+bank.loc[(bank['total_revolving_bal']>1600)&(bank['total_revolving_bal']<=2600),'revolving_bal']='High'
+
+#Revolving balance impact on Churn Out rate
+ 
+a = sns.catplot(x='revolving_bal', y='churn_out', kind= 'bar', data = bank, errwidth=0)
+plt.xlabel('Revolving Balance')
+plt.ylabel('Churn Out')
+plt.title('Revolving balance impact on Churn Out rate')
+
+"""The Churn rate is very high when the Revolving balance is low."""
+
+# Revolving balance based on Card category
+
+a = sns.catplot(x='card_category', y='churn_out',hue= 'revolving_bal', kind= 'bar', data = bank, height=6, aspect=6/5)
+plt.xlabel('Card Category')
+plt.ylabel('Churn Out')
+plt.title('Attrition within card category and revolving balance')
+
+"""Within all kinds of card categories, the churn rate is very high when the Revolving balance is low."""
+
+# total_amt_chng_q4_q1 on attrition flag the change of total_trans_amt
+
+sns.scatterplot(data=bank, x="total_amt_chng_q4_q1", y="total_trans_amt", hue="attrition_flag")
+plt.title('Attrition from total_amt_chng_q4_q1 to total_trans_amt')
+
+"""Both transaction amount and increase in transaction amount from first quarter to fourth quarter 
+tend to be much lower for attrited customers than existing customers."""
+
+# total_amt_chng_q4_q1 on attrition flag the change of total_trans_ct
+sns.scatterplot(data=bank, x="total_amt_chng_q4_q1", y="total_trans_ct", hue="attrition_flag")
+plt.title('Attrition from total_amt_chng_q4_q1 to total_trans_ct')
+
+"""Both total number of times customers transact and increase in transaction amount from first quareter to fourth quarter 
+tend to be lower for attrited custmers than existing customers."""
+
+# Total_Relationship_Count by attrition flag
+a = sns.catplot(x='total_relationship_count', y='churn_out', kind= 'bar', errwidth=0, data = bank, height=6, aspect=6/4)
+plt.xlabel('Total_relationship_count')
+plt.ylabel('Churn Out')
+plt.title('total_relationship_count on Churn Out rate')
+
+"""The Relationship counts show the total number of products the customers hold.
+ When customers hold fewer than three products, the churn rates are high."""
+
+# Transaction pattern of months of inactive periods
+a = sns.catplot(x='months_inactive_12_mon', y='churn_out', kind= 'bar', data = bank, height=6, aspect=6/4)
+plt.xlabel('Months inactive 12_mon')
+plt.ylabel('Churn Out')
+plt.title('Attrition proportion within Inactive 12 months')
+
+"""The churn rate is high when the customers are not using the card actively within 12 months."""
+
+# Months on book and the churn rate
+a = sns.catplot(x='months_on_book', y='churn_out', kind= 'bar', data = bank, errwidth=0, height=7, aspect=4/3)
+plt.xlabel('Months on book')
+plt.ylabel('Churn Out')
+plt.title('The churn-out rate during customers are continuing the relationship with the bank')
+
+"""The churn-out rate during customers is continuing the relationship with the bank.
+ The churn rates are high on the 15, 18, and 50 levels of the period."""
+
+#Correlation table 
+
+numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+
+bank_numeric =  bank.select_dtypes(include=numerics)
+
+
+#Plotting the correlations
+
+correlation1 = bank.corr()
+plt.figure(figsize=(20,10))
+heatmap = sns.heatmap(correlation1, vmin=-1, vmax=2, cmap="YlGnBu", annot=True, fmt=".2f")
+heatmap.set_title('Bank Correlation Heatmap Numeric variables', fontdict={'fontsize':14}, pad=30);
+
+"""The heatmap is showing a correlation among all numeric variables. The month-on book, average open to buy, 
+total transaction amount change between q4-q1, total transaction count, total transaction amount, and 
+the revolving balance are high to medium correlated with the churn rate."""
+
+# Converting string value to numeric to check the correlation among the categorical variables
+bank.dtypes
+bank_categorical = bank.assign(
+                               male = np.where(bank['gender']=='M',1,0),
+                               doctorate = np.where(bank['education_level']=='Doctorate',1,0),
+                               post_praduate = np.where(bank['education_level']=='Post-Graduate',1,0),
+                               college = np.where(bank['education_level']=='College',1,0),
+                               status_unknown = np.where(bank['marital_status']=='Unknown',1,0),
+                               married = np.where(bank['marital_status']=='Married',1,0),
+                               single = np.where(bank['marital_status']=='Single',1,0),
+                               blue_card = np.where(bank['card_category']=='Blue',1,0),
+                               silver_card = np.where(bank['card_category']=='Silver',1,0),
+                               platinum_card = np.where(bank['card_category']=='Platinum',1,0))
+
+
+# Create new df with only containing numeric variables
+numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+
+bank_categorical =  bank_categorical.select_dtypes(include=numerics)
+
+
+#Plotting the correlations among numeric and categorical variables
+correlation = bank_categorical.corr()
+plt.figure(figsize=(20,10))
+heatmap = sns.heatmap(correlation, vmin=-1, vmax=2, cmap="YlGn", annot=True, fmt=".2f")
+heatmap.set_title('Bank Correlation Heatmap among numeric and categorical variables', fontdict={'fontsize':14}, pad=30);
+
+"""The bank can now predict and observe the overall analysis of whether a customer would likely churn with the data of 
+the past 12 months similar to what we have in this provided dataset. The bank can take strategic preventive measures such as 
+customer outreach or engagement to help avoid the customers from churning and to identify other reasons why customers are churning."""
+
+
+
+
